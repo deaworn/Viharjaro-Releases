@@ -30,7 +30,7 @@
       <p id="error" role="alert" hidden></p>
     </section>
   </main>
-  <script src="Build-v2/Viharjaro.loader.js"></script>
+  <script src="Build-v2.1/Viharjaro.loader.js"></script>
   <script>
     const canvas = document.getElementById('unity-canvas');
     if(new URLSearchParams(location.search).get('reference')==='1')document.querySelector('main').style.maxWidth='85.01dvh';
@@ -47,9 +47,9 @@
     createUnityInstance(canvas, {
       arguments: [],
       autoSyncPersistentDataPath: true,
-      dataUrl: 'Build-v2/Viharjaro.data',
-      frameworkUrl: 'Build-v2/Viharjaro.framework.js',
-      codeUrl: 'Build-v2/Viharjaro.wasm',
+      dataUrl: 'Build-v2.1/Viharjaro.data',
+      frameworkUrl: 'Build-v2.1/Viharjaro.framework.js',
+      codeUrl: 'Build-v2.1/Viharjaro.wasm',
       streamingAssetsUrl: 'StreamingAssets',
       companyName: "TomiGames",
       productName: "Viharjáró",
