@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="hu">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#041017">
+  <title>Viharjáró</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#041017;color:#e3f8ff;font-family:system-ui,sans-serif}
+    body{display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    main{position:relative;height:100%;height:100dvh;max-height:100%;width:100%;max-width:56.25dvh;background:#041017}
+    canvas{display:block;width:100%;height:100%;outline:none;touch-action:none}
+    #loader{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;text-align:center;background:#041017}
+    #loader[hidden]{display:none}h1{font-size:24px;letter-spacing:2px;margin:0}p{font-size:14px;color:#aacbd7;line-height:1.5;margin:0}
+    progress{width:100%;max-width:260px;height:5px;accent-color:#63eaff}
+    button{min-height:52px;min-width:180px;border:1px solid #62dfff;background:#092430;color:#ecfbff;font:600 16px system-ui;border-radius:8px;padding:12px 24px;cursor:pointer}
+    button:focus-visible{outline:3px solid white;outline-offset:4px}button:disabled{opacity:.5;cursor:wait}
+    #error{color:#ffc5c5;overflow-wrap:anywhere;max-height:40vh;overflow:auto}
+  </style>
+</head>
+<body>
+  <main aria-label="Viharjáró játék">
+    <canvas id="unity-canvas" width="540" height="960" tabindex="0" aria-label="Játéktér. Húzd az ujjad vagy az egeret oldalra a kormányzáshoz."></canvas>
+    <section id="loader" aria-label="Játék indítása">
+      <h1>VIHARJÁRÓ</h1>
+      <p id="status" role="status">Játék betöltése…</p>
+      <progress id="progress" value="0" max="1" aria-label="Betöltés"></progress>
+      <button id="play" disabled>Betöltés…</button>
+      <p>Húzd az ujjad jobbra vagy balra.</p>
+      <p id="error" role="alert" hidden></p>
+    </section>
+  </main>
+  <script src="Build/Viharjaro.loader.js"></script>
+  <script>
+    const canvas = document.getElementById('unity-canvas');
+    const play = document.getElementById('play');
+    const status = document.getElementById('status');
+    const progress = document.getElementById('progress');
+    const showError = message => {
+      const error = document.getElementById('error');
+      error.textContent = String(message); error.hidden = false;
+      document.getElementById('loader').hidden = false;
+      status.textContent = 'Nem sikerült elindítani a játékot.';
+      play.disabled = true;
+    };
+    createUnityInstance(canvas, {
+      arguments: [],
+      dataUrl: 'Build/Viharjaro.data',
+      frameworkUrl: 'Build/Viharjaro.framework.js',
+      codeUrl: 'Build/Viharjaro.wasm',
+      streamingAssetsUrl: 'StreamingAssets',
+      companyName: "TomiGames",
+      productName: "Viharjáró",
+      productVersion: "0.1.0",
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.5, 1280 / Math.max(canvas.clientHeight, 1)),
+      showBanner: (message, type) => { if (type === 'error') showError(message); else console.warn(message); }
+    }, value => {
+      progress.value = value;
+      status.textContent = 'Játék betöltése… ' + Math.round(value * 100) + '%';
+    }).then(instance => {
+      window.viharUnity = instance;
+      if (new URLSearchParams(location.search).get('qa') === '1') {
+        const qa = document.createElement('aside');
+        qa.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:20;max-width:310px;background:#041017e8;padding:6px;font-size:11px';
+        for (const [label,method,arg] of [['Próbamód','SetPractice','1'],['Mérés nullázása','ResetMeasurement',''],['Mérés kiolvasása','ReportMeasurement','']]) {
+          const b=document.createElement('button');b.textContent=label;b.style.cssText='min-width:0;min-height:34px;font-size:11px;padding:5px;margin:2px';
+          b.onclick=()=>instance.SendMessage('Viharjaro run',method,arg);qa.append(b);
+        }
+        const report=document.createElement('pre');report.style.cssText='white-space:pre-wrap;margin:4px;max-height:240px;overflow:auto';qa.append(report);document.body.append(qa);
+        window.addEventListener('vihar-report',e=>report.textContent=e.detail);
+      }
+      status.textContent = 'Készen állsz?';
+      progress.hidden = true;
+      play.textContent = 'Indítás'; play.disabled = false;
+      // A real user gesture allows Unity's Web Audio context to resume.
+      play.addEventListener('click', () => {
+        document.getElementById('loader').hidden = true;
+        canvas.focus();
+      }, {once: true});
+    }).catch(showError);
+  </script>
+</body>
+</html>
+
+
+
