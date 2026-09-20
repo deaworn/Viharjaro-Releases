@@ -20,19 +20,20 @@
 </head>
 <body>
   <main aria-label="Viharjáró játék">
-    <canvas id="unity-canvas" width="540" height="960" tabindex="0" aria-label="Játéktér. Húzd az ujjad vagy az egeret oldalra a kormányzáshoz."></canvas>
+    <canvas id="unity-canvas" width="540" height="960" tabindex="0" aria-label="Játéktér. Húzd az ujjad vagy az egeret oldalra, fel vagy le a kormányzáshoz."></canvas>
     <section id="loader" aria-label="Játék indítása">
       <h1>VIHARJÁRÓ</h1>
       <p id="status" role="status">Játék betöltése…</p>
       <progress id="progress" value="0" max="1" aria-label="Betöltés"></progress>
       <button id="play" disabled>Betöltés…</button>
-      <p>Húzd az ujjad jobbra vagy balra.</p>
+      <p>Húzd az ujjad oldalra, fel vagy le.</p>
       <p id="error" role="alert" hidden></p>
     </section>
   </main>
-  <script src="Build/Viharjaro.loader.js"></script>
+  <script src="Build-v2/Viharjaro.loader.js"></script>
   <script>
     const canvas = document.getElementById('unity-canvas');
+    if(new URLSearchParams(location.search).get('reference')==='1')document.querySelector('main').style.maxWidth='85.01dvh';
     const play = document.getElementById('play');
     const status = document.getElementById('status');
     const progress = document.getElementById('progress');
@@ -45,9 +46,10 @@
     };
     createUnityInstance(canvas, {
       arguments: [],
-      dataUrl: 'Build/Viharjaro.data',
-      frameworkUrl: 'Build/Viharjaro.framework.js',
-      codeUrl: 'Build/Viharjaro.wasm',
+      autoSyncPersistentDataPath: true,
+      dataUrl: 'Build-v2/Viharjaro.data',
+      frameworkUrl: 'Build-v2/Viharjaro.framework.js',
+      codeUrl: 'Build-v2/Viharjaro.wasm',
       streamingAssetsUrl: 'StreamingAssets',
       companyName: "TomiGames",
       productName: "Viharjáró",
@@ -62,12 +64,15 @@
       if (new URLSearchParams(location.search).get('qa') === '1') {
         const qa = document.createElement('aside');
         qa.style.cssText = 'position:fixed;left:4px;bottom:4px;z-index:20;max-width:310px;background:#041017e8;padding:6px;font-size:11px';
-        for (const [label,method,arg] of [['Próbamód','SetPractice','1'],['Mérés nullázása','ResetMeasurement',''],['Mérés kiolvasása','ReportMeasurement','']]) {
+        for (const [label,method,arg] of [['Próbamód','SetPractice','1'],['Mérés nullázása','ResetMeasurement',''],['Mérés kiolvasása','ReportMeasurement',''],['Referenciahelyzet','ReferencePose','']]) {
           const b=document.createElement('button');b.textContent=label;b.style.cssText='min-width:0;min-height:34px;font-size:11px;padding:5px;margin:2px';
           b.onclick=()=>instance.SendMessage('Viharjaro run',method,arg);qa.append(b);
         }
         const report=document.createElement('pre');report.style.cssText='white-space:pre-wrap;margin:4px;max-height:240px;overflow:auto';qa.append(report);document.body.append(qa);
         window.addEventListener('vihar-report',e=>report.textContent=e.detail);
+        const save=(blob,name)=>{if(location.hostname==='127.0.0.1')fetch('/qa-capture/'+name,{method:'POST',body:blob}).then(r=>{if(!r.ok)throw Error('Capture save failed');}).catch(console.warn);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.textContent=name;a.style.color='#70efff';a.style.display='block';qa.append(a);const preview=document.createElement(blob.type.startsWith('image/')?'img':'video');preview.src=a.href;preview.style.cssText='display:block;width:150px;max-height:160px;object-fit:contain';if(preview.tagName==='VIDEO')preview.controls=true;qa.append(preview);a.click();};
+        const shot=document.createElement('button');shot.textContent='Kép mentése';shot.style.cssText='min-width:0;min-height:30px;padding:5px;font-size:11px';shot.onclick=()=>requestAnimationFrame(()=>canvas.toBlob(b=>save(b,'Viharjaro-Web-v2.png'),'image/png'));qa.append(shot);
+        let recorder,chunks=[];const record=document.createElement('button');record.textContent='Videó indítása';record.style.cssText=shot.style.cssText;record.onclick=()=>{if(recorder&&recorder.state==='recording'){recorder.stop();record.textContent='Videó indítása';return;}chunks=[];recorder=new MediaRecorder(canvas.captureStream(30),{mimeType:'video/webm;codecs=vp9',videoBitsPerSecond:4000000});recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};recorder.onstop=()=>save(new Blob(chunks,{type:'video/webm'}),'Viharjaro-Web-v2.webm');recorder.start();record.textContent='Videó mentése';};qa.append(record);
       }
       status.textContent = 'Készen állsz?';
       progress.hidden = true;
@@ -81,6 +86,9 @@
   </script>
 </body>
 </html>
+
+
+
 
 
 
